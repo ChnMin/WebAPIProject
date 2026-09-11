@@ -1,0 +1,1143 @@
+<title>風扇噪音線上訓練平台 — OneDrive Excel 版</title>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js" crossorigin="anonymous"></script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',Arial,'Microsoft JhengHei',sans-serif;
+    background:#f2f6fc; color:#0d2540;
+  }
+  :root{
+    --navy:#0d2540; --navy-line:#1b3a5c; --navy-text:#cfe2ff; --navy-text-2:#8fb3dd; --navy-text-3:#6f96c4;
+    --accent:#3f6fd0; --accent-2:#004fc4; --line:#e2e8f2; --bg:#f2f6fc;
+    --shadow: 0 18px 50px rgba(15,42,70,.10);
+    --good:#0ca30c; --good-bg:#e9f9e9; --bad:#d03b3b; --bad-bg:#fdeaea;
+  }
+  .num{font-variant-numeric:tabular-nums;font-family:'Consolas','IBM Plex Mono',monospace;}
+  .shell{display:flex; min-height:100vh; align-items:stretch;}
+  .sidenav{flex:0 0 250px; width:250px; background:var(--navy); color:var(--navy-text); position:sticky; top:0; align-self:flex-start; height:100vh; overflow-y:auto; display:flex; flex-direction:column; padding:0;}
+  .sidenav .brand{display:flex; align-items:flex-start; gap:11px; padding:22px 18px 16px;}
+  .sidenav .brand .b{width:40px;height:40px;border-radius:10px;background:var(--accent);display:grid;place-items:center;font-size:19px;font-weight:900;color:#fff;flex:0 0 auto;}
+  .sidenav .brand .bt{display:block;font-weight:900;font-size:15px;line-height:1.28;color:#fff;}
+  .sidenav .brand .bs{display:block;font-size:11px;color:var(--navy-text-2);margin-top:6px;}
+  .side-label{font-size:11px;letter-spacing:.13em;color:var(--navy-text-3);font-weight:800;padding:16px 20px 8px;text-transform:uppercase;}
+  .nav{display:flex;align-items:center;gap:12px;padding:10px 18px;margin:0 8px;border-radius:9px;cursor:pointer;color:var(--navy-text);text-decoration:none;font-size:13.5px;font-weight:600;}
+  .nav .ic{width:18px;text-align:center;font-size:14px;color:var(--navy-text-3);}
+  .nav .cnt{margin-left:auto;font-size:10.5px;color:var(--navy-text-3);font-family:'Consolas',monospace;}
+  .nav:hover{background:rgba(255,255,255,.06);}
+  .nav.active{background:var(--accent);color:#fff;}
+  .nav.active .ic,.nav.active .cnt{color:#fff;}
+  .sidenav .foot{margin-top:auto;padding:16px 20px;font-size:10.5px;color:var(--navy-text-3);border-top:1px solid var(--navy-line);}
+  .main{flex:1; min-width:0; padding:26px 32px 70px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .topbar h1{font-size:25px;margin:0;font-weight:900;}
+  .topbar .sub{font-size:13px;color:#5b7aa5;margin-top:4px;max-width:60ch;line-height:1.55;}
+  .userchip{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 14px;box-shadow:var(--shadow);}
+  .userchip .av{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;}
+  .userchip .name{font-size:12.5px;font-weight:700;}
+  .userchip .email{font-size:10.5px;color:#6f96c4;}
+  .userchip button{border:none;background:none;color:var(--accent-2);font-size:11.5px;font-weight:700;cursor:pointer;padding:0;margin-left:6px;}
+  .sync-line{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#5b7aa5;margin-top:10px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:#8fb3dd;flex:none;}
+  .dot.live{background:var(--good);} .dot.off{background:var(--bad);}
+  .sync-line button.btn{padding:4px 10px;height:auto;font-size:11px;}
+  .panel{display:none;} .panel.active{display:block;}
+  .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;}
+  @media (max-width:960px){.grid2{grid-template-columns:1fr;}}
+  .card{background:#fff;border-radius:16px;box-shadow:var(--shadow);padding:20px 24px;}
+  .card + .card{margin-top:16px;}
+  .card h3{font-size:15.5px;margin:0 0 4px;font-weight:900;}
+  .card .sub{color:#6f96c4;font-size:12px;margin-bottom:14px;}
+  .section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#6f96c4;margin:24px 0 10px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+  @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:13px 16px;}
+  .stat .k{font-size:10.5px;color:#6f96c4;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;font-weight:700;}
+  .stat .v{font-family:'Consolas',monospace;font-size:20px;font-weight:700;}
+  .stat .v small{font-size:11px;color:#6f96c4;font-family:inherit;font-weight:500;}
+  .stat.pass .v{color:var(--good);}
+  .field-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 12px;}
+  @media (max-width:760px){.field-grid{grid-template-columns:repeat(2,1fr);}}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11.5px;color:#3a5a86;font-weight:700;}
+  .field label .opt{color:#8fa9c8;font-weight:500;}
+  .field .unit-wrap{position:relative;}
+  .field input,.field select{width:100%;padding:8px 34px 8px 10px;border:1px solid #cfe0f5;border-radius:10px;background:#f7fafd;color:#0d2540;font:inherit;font-size:13px;}
+  .field select{appearance:none;-webkit-appearance:none;cursor:pointer;}
+  .field input:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:-1px;background:#fff;}
+  .field .unit{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10.5px;color:#8fa9c8;pointer-events:none;}
+  .field.target input{border-color:var(--accent);}
+  .field.wide{grid-column:1 / -1;}
+  .btn{appearance:none;border:1px solid #b8d5ff;background:#eef6ff;color:var(--accent-2);border-radius:10px;height:38px;padding:0 18px;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.primary:hover:not(:disabled){background:var(--accent-2);}
+  .btn.ghost:hover:not(:disabled){background:#dfeeff;}
+  .btn.block{width:100%;justify-content:center;}
+  .row-actions{display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap;}
+  .msg{font-size:12px;margin-top:8px;}
+  .msg.ok{color:var(--good);} .msg.err{color:var(--bad);}
+  textarea.csv{width:100%;min-height:90px;resize:vertical;border:1px solid #cfe0f5;border-radius:10px;background:#f7fafd;color:#0d2540;font-family:'Consolas',monospace;font-size:12px;padding:10px;line-height:1.5;}
+  details.csv-help{font-size:12px;color:#5b7aa5;margin-top:8px;}
+  details.csv-help summary{cursor:pointer;color:var(--accent-2);font-weight:700;}
+  code.inline{background:#eef4ff;border-radius:5px;padding:1px 6px;font-family:'Consolas',monospace;font-size:11px;}
+  .train-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .progress-wrap{flex:1;min-width:180px;}
+  .progress-track{height:6px;border-radius:4px;background:#e2e8f2;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--accent);width:0%;transition:width .2s;}
+  .progress-label{font-size:11px;color:#6f96c4;margin-top:5px;font-family:'Consolas',monospace;}
+  .metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+  @media (max-width:760px){.metric-row{grid-template-columns:repeat(2,1fr);}}
+  .metric{background:#f7fafd;border-radius:12px;padding:12px 14px;}
+  .metric .k{font-size:10.5px;color:#6f96c4;text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  .metric .v{font-family:'Consolas',monospace;font-size:18px;margin-top:4px;font-weight:700;}
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:960px){.chart-grid{grid-template-columns:1fr;}}
+  .chart-card{background:#f7fafd;border-radius:14px;padding:16px 18px;}
+  .chart-card h4{font-size:12.5px;font-weight:800;margin:0 0 2px;}
+  .chart-card .sub{font-size:11px;color:#6f96c4;margin-bottom:10px;}
+  .legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:11px;color:#3a5a86;}
+  .legend .sw{width:9px;height:9px;border-radius:2px;flex:none;}
+  svg.chart text{font-family:'Consolas',monospace;fill:#6f96c4;font-size:10px;}
+  svg.chart .axis-line{stroke:#b9cbe4;stroke-width:1;}
+  svg.chart .grid-line{stroke:#e2e8f2;stroke-width:1;}
+  .empty-chart{display:flex;align-items:center;justify-content:center;height:180px;color:#8fa9c8;font-size:12px;text-align:center;padding:0 20px;}
+  .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line);}
+  table.data-table{width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap;}
+  table.data-table th,table.data-table td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);}
+  table.data-table th:first-child,table.data-table td:first-child{text-align:left;}
+  table.data-table th{background:#f7fafd;color:#6f96c4;font-weight:800;text-transform:uppercase;letter-spacing:.03em;font-size:10px;position:sticky;top:0;}
+  table.data-table td{font-family:'Consolas',monospace;color:#3a5a86;}
+  table.data-table td.tag{font-family:inherit;text-align:left;}
+  table.data-table tr:last-child td{border-bottom:none;}
+  .table-scroll{max-height:280px;overflow-y:auto;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;}
+  .pill.hist{background:#eef2f8;color:#6f96c4;}
+  .pill.user{background:var(--good-bg);color:var(--good);}
+  .predict-result{margin-top:14px;padding:14px 16px;border-radius:12px;background:#eef6ff;display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .predict-result .big{font-family:'Consolas',monospace;font-size:24px;font-weight:800;color:var(--accent-2);}
+  .predict-result .lab{font-size:11.5px;color:#6f96c4;}
+  .history-row{display:flex;align-items:center;gap:14px;}
+  .history-row svg{flex:none;}
+  .history-row .hist-text{font-size:11.5px;color:#6f96c4;line-height:1.6;}
+  .banner{border:1px solid var(--line);background:#f7fafd;border-radius:12px;padding:12px 16px;font-size:12px;color:#3a5a86;margin-bottom:16px;}
+  .banner.warn{border-color:#f3c6c6;background:var(--bad-bg);color:var(--bad);}
+  .banner.info{border-color:#b8d5ff;background:#eef6ff;color:var(--accent-2);}
+  code.block{display:block;white-space:pre-wrap;background:#0d2540;color:#cfe2ff;border-radius:12px;padding:14px 16px;font-family:'Consolas',monospace;font-size:11.5px;line-height:1.7;margin:10px 0;word-break:break-all;}
+  .setup-steps{counter-reset:step;list-style:none;padding:0;margin:0;}
+  .setup-steps>li{counter-increment:step;position:relative;padding:0 0 20px 34px;}
+  .setup-steps>li::before{content:counter(step);position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;}
+  .setup-steps h4{margin:0 0 6px;font-size:13.5px;}
+  .setup-steps p{margin:0 0 6px;font-size:12.5px;color:#3a5a86;line-height:1.6;}
+  .config-row{display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;margin-bottom:10px;}
+  .config-row label{font-size:12.5px;font-weight:700;color:#3a5a86;}
+  .config-row input{padding:9px 12px;border:1px solid #cfe0f5;border-radius:10px;background:#f7fafd;font-size:12.5px;font-family:'Consolas',monospace;}
+  #gate{position:fixed;inset:0;background:linear-gradient(160deg,#0d2540,#163a63 60%,#1f4e79);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .gate-card{background:#fff;border-radius:20px;box-shadow:0 30px 80px rgba(0,0,0,.35);max-width:460px;width:100%;padding:34px 32px;text-align:center;}
+  .gate-card .b{width:56px;height:56px;border-radius:14px;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:26px;font-weight:900;margin:0 auto 16px;}
+  .gate-card h2{margin:0 0 6px;font-size:19px;}
+  .gate-card p{margin:0 0 18px;font-size:13px;color:#5b7aa5;line-height:1.6;}
+  .gate-card .btn{width:100%;height:44px;font-size:14px;}
+  .gate-card .skip{margin-top:16px;font-size:12px;}
+  .gate-card .skip a{color:#8fa9c8;cursor:pointer;text-decoration:underline;}
+  .gate-card .errbox{margin-top:16px;text-align:left;background:var(--bad-bg);border:1px solid #f3c6c6;border-radius:10px;padding:12px 14px;font-size:11.5px;color:#7a2020;line-height:1.6;}
+  #app{display:none;}
+</style>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="b">M</div>
+    <h2>風扇噪音線上訓練平台</h2>
+    <p>資料存放在你自己的 OneDrive（一份 Excel 檔案），透過 Microsoft Graph API 讀寫，不需要 IT 額外授權 SharePoint 清單。請先以公司 Microsoft 帳號登入（沿用 ServerNoiseAI 既有之 Azure AD 應用程式）。</p>
+    <button class="btn primary" id="loginBtn" onclick="doLogin()">🔑 以 Microsoft 帳號登入</button>
+    <div class="skip"><a onclick="skipLogin()">略過登入，僅離線預覽介面（無法讀寫資料）</a></div>
+    <div id="loginErr" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="app">
+<div class="shell">
+  <nav class="sidenav">
+    <div class="brand">
+      <div class="b">M</div>
+      <span><span class="bt">風扇噪音線上<br>訓練平台</span><span class="bs">Fan Noise Training · OneDrive Excel 版</span></span>
+    </div>
+    <div class="side-label">機型資料集</div>
+    <div id="navTypes"></div>
+    <div class="side-label">系統</div>
+    <a class="nav" data-tab="__settings" onclick="switchTab('__settings')"><span class="ic">⚙</span>設定與連線</a>
+    <a class="nav" data-tab="__guide" onclick="switchTab('__guide')"><span class="ic">📘</span>設定指南</a>
+    <div class="foot">資料透過 Microsoft Graph API 直接讀寫你自己 OneDrive 裡的一份 Excel 檔案（自動建立），不經過 SharePoint 清單或 Power Automate。模型訓練於瀏覽器端執行。</div>
+  </nav>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">風扇噪音線上訓練平台</h1>
+        <div class="sub" id="pageSub">集結各機種風扇規格與實測系統噪音，於瀏覽器端訓練類神經網路模型，透過 Graph API 與你的 OneDrive Excel 檔案同步。</div>
+        <div class="sync-line">
+          <span class="dot" id="syncDot"></span><span id="syncText">尚未連線</span>
+          <button class="btn ghost" onclick="refreshAll()" style="margin-left:6px;">⟳ 重新整理</button>
+        </div>
+      </div>
+      <div class="userchip" id="userChip"></div>
+    </div>
+    <div id="globalBanner"></div>
+    <div id="panels"></div>
+  </div>
+</div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   0. AZURE AD / MSAL — reuses ServerNoiseAI_0820_UI_Updated.py's app registration,
+   now requesting the Files.ReadWrite Graph delegated scope (OneDrive, NOT SharePoint
+   Sites.Selected) — this scope is normally user-consentable, no admin action needed
+   in most tenants.
+   ============================================================ */
+const DEFAULT_CLIENT_ID = "ad065c0e-0f57-46c4-a113-74c5b9cf8adc";
+const DEFAULT_TENANT_ID = "2ae41f0c-acca-40f1-9c63-49475ff38512";
+const GRAPH_SCOPES = ["Files.ReadWrite", "User.Read"];
+
+function loadSettings(){ try{ return JSON.parse(localStorage.getItem("fanNoiseOD_excel_settings")||"{}"); }catch(e){ return {}; } }
+function saveSettingsToStorage(s){ localStorage.setItem("fanNoiseOD_excel_settings", JSON.stringify(s)); }
+let settings = Object.assign({
+  clientId: DEFAULT_CLIENT_ID,
+  tenantId: DEFAULT_TENANT_ID,
+  workbookPath: "/FanNoiseAI/FanNoiseData.xlsx",
+  autoRefreshSec: 30,
+}, loadSettings());
+
+let msalInstance = null, currentAccount = null, guestMode = false;
+
+function buildMsal(){
+  msalInstance = new msal.PublicClientApplication({
+    auth: { clientId: settings.clientId, authority: `https://login.microsoftonline.com/${settings.tenantId}`, redirectUri: window.location.origin + window.location.pathname },
+    cache: { cacheLocation: "localStorage" },
+  });
+}
+async function getGraphToken(){
+  const req = { scopes: GRAPH_SCOPES, account: currentAccount };
+  try{ const res = await msalInstance.acquireTokenSilent(req); return res.accessToken; }
+  catch(e){ const res = await msalInstance.acquireTokenPopup(req); return res.accessToken; }
+}
+async function doLogin(){
+  const errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  if(location.protocol === 'file:'){
+    errEl.style.display='block';
+    errEl.innerHTML = `<div class="errbox"><b>無法以 file:// 方式登入。</b><br>需要真實網址（部署於公司內部網頁伺服器或其他 https 位置），且該網址須先登記為 Azure AD 應用程式的「重新導向 URI」（這一步通常仍需請 IT／Azure AD 管理員協助一次，見左側「設定指南」）。<br><br>本機測試請點選下方「略過登入」以離線預覽介面。</div>`;
+    return;
+  }
+  try{
+    buildMsal();
+    await msalInstance.initialize();
+    const res = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
+    currentAccount = res.account;
+    msalInstance.setActiveAccount(currentAccount);
+    enterApp();
+  }catch(e){
+    console.error(e);
+    errEl.style.display='block';
+    let hint = "";
+    const msg = String(e && e.message || e);
+    if(msg.includes('redirect_uri_mismatch') || msg.includes('AADSTS50011')){
+      hint = `<br><br><b>可能原因：</b>目前網址（<code class="inline">${esc(window.location.origin+window.location.pathname)}</code>）尚未登記在 Azure AD 應用程式的「重新導向 URI」清單中，請洽 IT 新增（見左側「設定指南」）。`;
+    } else if(msg.includes('AADSTS65001') || msg.includes('consent')){
+      hint = `<br><br><b>可能原因：</b>此帳號尚未同意 Files.ReadWrite（OneDrive 檔案讀寫）權限。多數情況下登入視窗會直接顯示「接受」按鈕，你自己按下即可；若畫面顯示「需要系統管理員核准」，才需要請 IT 依左側「設定指南」完成一次性核准。`;
+    }
+    errEl.innerHTML = `<div class="errbox"><b>登入失敗：</b>${esc(msg)}${hint}</div>`;
+  }
+}
+function skipLogin(){ guestMode = true; enterApp(); }
+function enterApp(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  renderUserChip();
+  buildNavAndPanels();
+  if(guestMode){
+    document.getElementById('globalBanner').innerHTML = `<div class="banner warn">離線預覽模式，未登入 Microsoft 帳號（無法讀寫資料）。</div>`;
+  }
+  render();
+  refreshAll();
+  startAutoRefresh();
+}
+function renderUserChip(){
+  const el = document.getElementById('userChip');
+  if(currentAccount){
+    const initial = (currentAccount.name||currentAccount.username||"?").trim().charAt(0).toUpperCase();
+    el.innerHTML = `<div class="av">${esc(initial)}</div><div><div class="name">${esc(currentAccount.name||currentAccount.username)}</div><div class="email">${esc(currentAccount.username||"")}</div></div><button onclick="doLogout()">登出</button>`;
+  } else {
+    el.innerHTML = `<span style="background:#eaf3ff;color:#0b56c5;border:1px solid #b6d3ff;border-radius:17px;padding:6px 12px;font-weight:800;font-size:11.5px;">離線預覽模式</span>`;
+  }
+}
+function doLogout(){ if(msalInstance && currentAccount){ msalInstance.logoutRedirect({account: currentAccount}); return; } location.reload(); }
+function currentUserLabel(){ if(currentAccount) return currentAccount.name || currentAccount.username || "已登入使用者"; return ""; }
+
+/* ============================================================
+   1. SCHEMA (unchanged)
+   ============================================================ */
+const VENDOR_OPTIONS = [
+  {value:0, label:"AVC"}, {value:1, label:"Delta"}, {value:2, label:"Foxconn"},
+  {value:3, label:"Nidec"}, {value:4, label:"SUNON"}, {value:5, label:"廠商代碼 5"},
+];
+const FEATURES_STD = [
+  {key:"fan_vendor",          label:"風扇廠商",         labelEn:"Fan Vendor",        unit:"",    step:1,   digits:0, options:VENDOR_OPTIONS},
+  {key:"fan_unit_size",       label:"風扇尺寸",         labelEn:"Fan Unit Size",     unit:"mm",  step:1,   digits:0},
+  {key:"fan_unit_max_noise",  label:"風扇額定最大噪音", labelEn:"Fan Max Noise Spec",unit:"dB",  step:0.1, digits:1},
+  {key:"fan_standalone_noise",label:"風扇單體實測噪音", labelEn:"Fan Standalone Noise",unit:"dB",step:0.1, digits:1, optional:true},
+  {key:"server_size",         label:"伺服器尺寸",       labelEn:"Server Size",       unit:"U",   step:1,   digits:0},
+  {key:"fan_number",          label:"風扇數量",         labelEn:"Fan Count",         unit:"",    step:1,   digits:0},
+  {key:"fan_duty",            label:"風扇占空比",       labelEn:"Fan Duty",          unit:"%",   step:1,   digits:0},
+  {key:"fan_rated_rpm",       label:"風扇額定轉速",     labelEn:"Fan Rated RPM",     unit:"RPM", step:100, digits:0},
+  {key:"fan_rpm",             label:"風扇實際轉速",     labelEn:"Fan Operating RPM", unit:"RPM", step:100, digits:0},
+];
+const FEATURES_TOWER = [
+  {key:"fan_vendor",          label:"風扇廠商",         labelEn:"Fan Vendor",        unit:"",    step:1,   digits:0, options:VENDOR_OPTIONS},
+  {key:"fan_unit_size",       label:"風扇尺寸",         labelEn:"Fan Unit Size",     unit:"mm",  step:1,   digits:0},
+  {key:"fan_unit_max_noise",  label:"風扇額定最大噪音", labelEn:"Fan Max Noise Spec",unit:"dB",  step:0.1, digits:1},
+  {key:"fan_standalone_noise",label:"風扇單體實測噪音", labelEn:"Fan Standalone Noise",unit:"dB",step:0.1, digits:1, optional:true},
+  {key:"server_size",         label:"伺服器尺寸",       labelEn:"Server Size",       unit:"U",   step:1,   digits:0},
+  {key:"fan_number",          label:"風扇數量",         labelEn:"Fan Count",         unit:"",    step:1,   digits:0},
+  {key:"fan_rpm",             label:"風扇實際轉速",     labelEn:"Fan Operating RPM", unit:"RPM", step:100, digits:0},
+];
+const TARGET = {key:"server_system_noise", label:"系統噪音", labelEn:"System Noise", unit:"Bel", step:0.1, digits:2};
+const THRESHOLD = 0.3;
+const TYPES = {
+  "1U":    { label:"1U 伺服器",       features:FEATURES_STD },
+  "2U":    { label:"2U 伺服器",       features:FEATURES_STD },
+  "Tower": { label:"Tower 直立式",    features:FEATURES_TOWER },
+  "All":   { label:"其他機型 (3U 等)",features:FEATURES_STD },
+};
+const TYPE_KEYS = Object.keys(TYPES);
+const TYPE_ICON = {"1U":"▤","2U":"▥","Tower":"▮","All":"▦"};
+
+/* ============================================================
+   2. TINY MLP (vanilla JS — unchanged)
+   ============================================================ */
+function randn(){ let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function zerosMat(r,c){ const m=new Array(r); for(let i=0;i<r;i++) m[i]=new Array(c).fill(0); return m; }
+function zerosVec(n){ return new Array(n).fill(0); }
+function cloneDeep(a){ return Array.isArray(a[0]) ? a.map(r=>r.slice()) : a.slice(); }
+function initWeights(nIn,h1,h2){
+  const w1s=Math.sqrt(2/nIn), w2s=Math.sqrt(2/h1), w3s=Math.sqrt(2/h2);
+  const W1=zerosMat(nIn,h1), W2=zerosMat(h1,h2), W3=zerosMat(h2,1);
+  for(let i=0;i<nIn;i++) for(let j=0;j<h1;j++) W1[i][j]=randn()*w1s;
+  for(let i=0;i<h1;i++) for(let j=0;j<h2;j++) W2[i][j]=randn()*w2s;
+  for(let i=0;i<h2;i++) W3[i][0]=randn()*w3s;
+  return {W1,b1:zerosVec(h1),W2,b2:zerosVec(h2),W3,b3:zerosVec(1)};
+}
+function cloneWeights(w){ return {W1:cloneDeep(w.W1),b1:cloneDeep(w.b1),W2:cloneDeep(w.W2),b2:cloneDeep(w.b2),W3:cloneDeep(w.W3),b3:cloneDeep(w.b3)}; }
+function forwardFull(w,x){
+  const {W1,b1,W2,b2,W3,b3}=w;
+  const nIn=W1.length,h1=W1[0].length,h2=W2[0].length;
+  const z1=new Array(h1);
+  for(let j=0;j<h1;j++){ let s=b1[j]; for(let i=0;i<nIn;i++) s+=x[i]*W1[i][j]; z1[j]=s; }
+  const a1=z1.map(v=>v>0?v:0);
+  const z2=new Array(h2);
+  for(let k=0;k<h2;k++){ let s=b2[k]; for(let j=0;j<h1;j++) s+=a1[j]*W2[j][k]; z2[k]=s; }
+  const a2=z2.map(v=>v>0?v:0);
+  let out=b3[0];
+  for(let k=0;k<h2;k++) out+=a2[k]*W3[k][0];
+  return {z1,a1,z2,a2,out};
+}
+function predictOne(w,x){ return forwardFull(w,x).out; }
+function computeGradients(w,X,y){
+  const {W1,b1,W2,b2,W3,b3}=w;
+  const nIn=W1.length,h1=W1[0].length,h2=W2[0].length;
+  const dW1=zerosMat(nIn,h1), db1=zerosVec(h1);
+  const dW2=zerosMat(h1,h2), db2=zerosVec(h2);
+  const dW3=zerosMat(h2,1), db3=zerosVec(1);
+  const N=X.length; let lossSum=0;
+  for(let n=0;n<N;n++){
+    const x=X[n];
+    const {z1,a1,z2,a2,out}=forwardFull(w,x);
+    const err=out-y[n]; lossSum+=err*err;
+    const dOut=2*err/N;
+    db3[0]+=dOut;
+    for(let k=0;k<h2;k++) dW3[k][0]+=a2[k]*dOut;
+    const dz2=new Array(h2);
+    for(let k=0;k<h2;k++) dz2[k]= z2[k]>0 ? dOut*W3[k][0] : 0;
+    for(let k=0;k<h2;k++) db2[k]+=dz2[k];
+    for(let j=0;j<h1;j++){ const aj=a1[j]; for(let k=0;k<h2;k++) dW2[j][k]+=aj*dz2[k]; }
+    const dz1=new Array(h1);
+    for(let j=0;j<h1;j++){ let s=0; for(let k=0;k<h2;k++) s+=dz2[k]*W2[j][k]; dz1[j]= z1[j]>0 ? s : 0; }
+    for(let j=0;j<h1;j++) db1[j]+=dz1[j];
+    for(let i=0;i<nIn;i++){ const xi=x[i]; for(let j=0;j<h1;j++) dW1[i][j]+=xi*dz1[j]; }
+  }
+  return {grads:{dW1,db1,dW2,db2,dW3,db3}, loss:lossSum/N};
+}
+function adamElem(param,grad,m,v,t,lr,b1,b2,eps){
+  if(Array.isArray(param[0])){ for(let i=0;i<param.length;i++) adamElem(param[i],grad[i],m[i],v[i],t,lr,b1,b2,eps); }
+  else { for(let i=0;i<param.length;i++){ m[i]=b1*m[i]+(1-b1)*grad[i]; v[i]=b2*v[i]+(1-b2)*grad[i]*grad[i]; const mh=m[i]/(1-Math.pow(b1,t)), vh=v[i]/(1-Math.pow(b2,t)); param[i]-= lr*mh/(Math.sqrt(vh)+eps); } }
+}
+function initAdam(w){
+  return { mW1:zerosMat(w.W1.length,w.W1[0].length), vW1:zerosMat(w.W1.length,w.W1[0].length),
+    mb1:zerosVec(w.b1.length), vb1:zerosVec(w.b1.length),
+    mW2:zerosMat(w.W2.length,w.W2[0].length), vW2:zerosMat(w.W2.length,w.W2[0].length),
+    mb2:zerosVec(w.b2.length), vb2:zerosVec(w.b2.length),
+    mW3:zerosMat(w.W3.length,1), vW3:zerosMat(w.W3.length,1),
+    mb3:zerosVec(1), vb3:zerosVec(1) };
+}
+function applyAdam(w,grads,st,t,lr){
+  adamElem(w.W1,grads.dW1,st.mW1,st.vW1,t,lr,0.9,0.999,1e-8);
+  adamElem(w.b1,grads.db1,st.mb1,st.vb1,t,lr,0.9,0.999,1e-8);
+  adamElem(w.W2,grads.dW2,st.mW2,st.vW2,t,lr,0.9,0.999,1e-8);
+  adamElem(w.b2,grads.db2,st.mb2,st.vb2,t,lr,0.9,0.999,1e-8);
+  adamElem(w.W3,grads.dW3,st.mW3,st.vW3,t,lr,0.9,0.999,1e-8);
+  adamElem(w.b3,grads.db3,st.mb3,st.vb3,t,lr,0.9,0.999,1e-8);
+}
+function shuffleIdx(n){ const a=[...Array(n).keys()]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function yieldFrame(){ return new Promise(r=> requestAnimationFrame(()=>setTimeout(r,0))); }
+function meanLoss(w,X,y){ let s=0; for(let n=0;n<X.length;n++){ const e=predictOne(w,X[n])-y[n]; s+=e*e; } return s/X.length; }
+async function trainMLP(X,y,{hidden=[16,16],epochs=400,lr=0.02,valFrac=0.15,patience=25,onProgress}={}){
+  const order=shuffleIdx(X.length);
+  const Xs=order.map(i=>X[i]), ys=order.map(i=>y[i]);
+  const nVal=Math.max(1,Math.round(Xs.length*valFrac));
+  const Xval=Xs.slice(0,nVal), yval=ys.slice(0,nVal);
+  const Xfit=Xs.slice(nVal), yfit=ys.slice(nVal);
+  const nIn=X[0].length;
+  let w=initWeights(nIn,hidden[0],hidden[1]);
+  const st=initAdam(w);
+  let best=cloneWeights(w), bestLoss=Infinity, bad=0;
+  for(let epoch=1; epoch<=epochs; epoch++){
+    const {grads}=computeGradients(w,Xfit,yfit);
+    applyAdam(w,grads,st,epoch,lr);
+    const vLoss=meanLoss(w,Xval,yval);
+    if(vLoss<bestLoss-1e-6){ bestLoss=vLoss; best=cloneWeights(w); bad=0; } else { bad++; }
+    if(epoch%4===0 || epoch===epochs){ onProgress && onProgress(epoch,epochs); await yieldFrame(); }
+    if(bad>=patience) break;
+  }
+  return best;
+}
+
+/* ============================================================
+   3. STATS / PIPELINE HELPERS (unchanged)
+   ============================================================ */
+function meanStd(arr){ const n=arr.length; const m=arr.reduce((a,b)=>a+b,0)/n; const v=arr.reduce((a,b)=>a+(b-m)*(b-m),0)/n; return {mean:m, std:Math.max(Math.sqrt(v),1e-6)}; }
+function colMeanStd(X,j){ return meanStd(X.map(r=>r[j])); }
+function buildMatrix(rows, featureDefs){
+  const impute={};
+  featureDefs.forEach((f,j)=>{
+    if(f.optional){
+      const vals=rows.map(r=>r[f.key]).filter(v=>v!==null && v!==undefined && !Number.isNaN(v));
+      impute[f.key]= vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    }
+  });
+  const X=rows.map(r=> featureDefs.map(f=>{ const v=r[f.key]; return (v===null||v===undefined||Number.isNaN(v)) ? impute[f.key] : v; }));
+  const y=rows.map(r=>r[TARGET.key]);
+  return {X,y,impute};
+}
+function standardizeMat(X, means, stds){ return X.map(row=> row.map((v,j)=> (v-means[j])/stds[j])); }
+function mse(a,b){ let s=0; for(let i=0;i<a.length;i++){ const e=a[i]-b[i]; s+=e*e;} return s/a.length; }
+function mae(a,b){ let s=0; for(let i=0;i<a.length;i++) s+=Math.abs(a[i]-b[i]); return s/a.length; }
+function r2(actual,pred){
+  const m=actual.reduce((a,b)=>a+b,0)/actual.length;
+  let ssRes=0, ssTot=0;
+  for(let i=0;i<actual.length;i++){ ssRes+=(actual[i]-pred[i])**2; ssTot+=(actual[i]-m)**2; }
+  return ssTot===0 ? 1 : 1-ssRes/ssTot;
+}
+async function trainForType(typeKey, rows, statusCb){
+  const cfg=TYPES[typeKey];
+  const feats=cfg.features;
+  const {X,y,impute}=buildMatrix(rows, feats);
+  const n=X.length;
+  const order=shuffleIdx(n);
+  const nTest=Math.max(1,Math.round(n*0.2));
+  const testIdx=order.slice(0,nTest), trainIdx=order.slice(nTest);
+  const Xtrain=trainIdx.map(i=>X[i]), ytrain=trainIdx.map(i=>y[i]);
+  const Xtest=testIdx.map(i=>X[i]), ytest=testIdx.map(i=>y[i]);
+  const fMeans=[], fStds=[];
+  for(let j=0;j<feats.length;j++){ const {mean,std}=colMeanStd(Xtrain,j); fMeans.push(mean); fStds.push(std); }
+  const {mean:yMean,std:yStd}=meanStd(ytrain);
+  const XtrainS=standardizeMat(Xtrain,fMeans,fStds);
+  const XtestS=standardizeMat(Xtest,fMeans,fStds);
+  const ytrainS=ytrain.map(v=>(v-yMean)/yStd);
+  const weights = await trainMLP(XtrainS,ytrainS,{ hidden:[16,16], epochs:400, lr:0.02, valFrac:0.15, patience:30, onProgress:(e,total)=> statusCb && statusCb(e,total) });
+  const predTestS = XtestS.map(x=>predictOne(weights,x));
+  const predTest = predTestS.map(v=>v*yStd+yMean);
+  const errors = predTest.map((p,i)=>p-ytest[i]);
+  const absErrors = errors.map(Math.abs);
+  const within = absErrors.filter(e=>e<THRESHOLD).length;
+  const metrics = { mse: mse(ytest,predTest), mae: mae(ytest,predTest), r2: r2(ytest,predTest), within, nTest:ytest.length, withinPct: within/ytest.length*100 };
+  const baseMSE = metrics.mse;
+  const importance = feats.map((f,j)=>{
+    const Xp = XtestS.map(r=>r.slice());
+    const col = Xp.map(r=>r[j]);
+    const shuffled = shuffleIdx(col.length).map(i=>col[i]);
+    Xp.forEach((r,i)=>{ r[j]=shuffled[i]; });
+    const predP = Xp.map(x=>predictOne(weights,x)*yStd+yMean);
+    const mP = mse(ytest,predP);
+    return {feature:f.key, label:f.label, importance: Math.max(0, mP-baseMSE)};
+  });
+  const maxImp = Math.max(1e-9, ...importance.map(i=>i.importance));
+  importance.forEach(i=> i.rel = i.importance/maxImp);
+  importance.sort((a,b)=> b.importance-a.importance);
+  return { weights, featureKeys:feats.map(f=>f.key), featureMeans:fMeans, featureStds:fStds, impute, targetMean:yMean, targetStd:yStd, hidden:[16,16], metrics, importance, testActual: ytest, testPredicted: predTest, nTotal:n, nTrain:Xtrain.length, nTest:Xtest.length };
+}
+function predictWithModel(model, featureDefs, values){
+  const x = featureDefs.map(f=>{ let v = values[f.key]; if(v===null || v===undefined || Number.isNaN(v)) v = model.impute[f.key] ?? 0; return v; });
+  const xs = x.map((v,j)=> (v-model.featureMeans[j])/model.featureStds[j]);
+  const outS = predictOne(model.weights, xs);
+  return outS*model.targetStd + model.targetMean;
+}
+
+/* ============================================================
+   4. SVG CHART HELPERS (unchanged) + IEC category chart
+   ============================================================ */
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+function niceStep(range, targetTicks){
+  const rough = range/targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough||1)));
+  const norm = rough/mag;
+  let step;
+  if(norm<1.5) step=1; else if(norm<3) step=2; else if(norm<7) step=5; else step=10;
+  return step*mag;
+}
+function ticksFor(min,max,target=5){
+  if(min===max){ min-=1; max+=1; }
+  const step=niceStep(max-min,target);
+  const start=Math.ceil(min/step)*step;
+  const out=[];
+  for(let v=start; v<=max+1e-9; v+=step) out.push(Math.round(v*1e6)/1e6);
+  return out;
+}
+function scatterChart(actual,predicted,W=340,H=260){
+  if(!actual.length) return emptyChart();
+  const pad={l:40,r:14,t:10,b:32};
+  const all=actual.concat(predicted);
+  let lo=Math.min(...all), hi=Math.max(...all);
+  const span=(hi-lo)||1; lo-=span*0.08; hi+=span*0.08;
+  const sx=v=> pad.l + (v-lo)/(hi-lo)*(W-pad.l-pad.r);
+  const sy=v=> H-pad.b - (v-lo)/(hi-lo)*(H-pad.t-pad.b);
+  const ticks=ticksFor(lo,hi,4);
+  let s='';
+  s+=`<line class="axis-line" x1="${sx(lo)}" y1="${sy(hi)}" x2="${sx(lo)}" y2="${sy(lo)}"/>`;
+  s+=`<line class="axis-line" x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(lo)}"/>`;
+  ticks.forEach(t=>{
+    s+=`<line class="grid-line" x1="${sx(t)}" y1="${sy(lo)}" x2="${sx(t)}" y2="${sy(hi)}"/>`;
+    s+=`<line class="grid-line" x1="${sx(lo)}" y1="${sy(t)}" x2="${sx(hi)}" y2="${sy(t)}"/>`;
+    s+=`<text x="${sx(t)}" y="${H-pad.b+14}" text-anchor="middle">${t}</text>`;
+    s+=`<text x="${pad.l-6}" y="${sy(t)+3}" text-anchor="end">${t}</text>`;
+  });
+  s+=`<line x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(hi)}" stroke="#8fa9c8" stroke-width="1.5" stroke-dasharray="3,4"/>`;
+  actual.forEach((a,i)=>{
+    const p=predicted[i];
+    const good=Math.abs(a-p)<THRESHOLD;
+    s+=`<circle cx="${sx(a)}" cy="${sy(p)}" r="4" fill="${good?'var(--good)':'var(--bad)'}" fill-opacity="0.75" stroke="#fff" stroke-width="1.5"/>`;
+  });
+  s+=`<text x="${(pad.l+W-pad.r)/2}" y="${H-4}" text-anchor="middle" font-size="10.5">實際噪音 Actual (Bel)</text>`;
+  s+=`<text x="12" y="${(pad.t+H-pad.b)/2}" text-anchor="middle" transform="rotate(-90 12 ${(pad.t+H-pad.b)/2})" font-size="10.5">預測噪音 Predicted (Bel)</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${s}</svg>`;
+}
+function histogramChart(absErrors,W=340,H=260){
+  if(!absErrors.length) return emptyChart();
+  const pad={l:32,r:14,t:10,b:32};
+  const maxE = Math.max(...absErrors, THRESHOLD*1.4);
+  const binCount = 10;
+  const binW = maxE/binCount;
+  const bins = new Array(binCount).fill(0);
+  absErrors.forEach(e=>{ let b=Math.floor(e/binW); if(b>=binCount)b=binCount-1; bins[b]++; });
+  const maxCount = Math.max(...bins,1);
+  const sx=i=> pad.l + i/binCount*(W-pad.l-pad.r);
+  const sy=v=> H-pad.b - v/maxCount*(H-pad.t-pad.b);
+  let s='';
+  s+=`<line class="axis-line" x1="${pad.l}" y1="${sy(0)}" x2="${W-pad.r}" y2="${sy(0)}"/>`;
+  s+=`<line class="axis-line" x1="${pad.l}" y1="${sy(0)}" x2="${pad.l}" y2="${sy(maxCount)}"/>`;
+  ticksFor(0,maxCount,4).forEach(t=>{ if(t===0) return;
+    s+=`<line class="grid-line" x1="${pad.l}" y1="${sy(t)}" x2="${W-pad.r}" y2="${sy(t)}"/>`;
+    s+=`<text x="${pad.l-6}" y="${sy(t)+3}" text-anchor="end">${t}</text>`; });
+  const barGap=2;
+  bins.forEach((c,i)=>{ const x0=sx(i), x1=sx(i+1); const h=sy(0)-sy(c);
+    s+=`<rect x="${x0+barGap/2}" y="${sy(c)}" width="${Math.max(0,x1-x0-barGap)}" height="${Math.max(0,h)}" fill="#3f6fd0" rx="2"/>`; });
+  const threshX = sx(THRESHOLD/binW);
+  if(THRESHOLD<=maxE){
+    s+=`<line x1="${threshX}" y1="${sy(0)}" x2="${threshX}" y2="${sy(maxCount)}" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="3,3"/>`;
+    s+=`<text x="${threshX}" y="${pad.t+8}" text-anchor="middle" fill="var(--bad)">0.3</text>`;
+  }
+  ["0",maxE.toFixed(1)].forEach((lab,i)=>{ s+=`<text x="${i===0?pad.l:W-pad.r}" y="${H-pad.b+14}" text-anchor="${i===0?'start':'end'}">${lab}</text>`; });
+  s+=`<text x="${(pad.l+W-pad.r)/2}" y="${H-4}" text-anchor="middle" font-size="10.5">絕對誤差 |Actual − Predicted| (Bel)</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${s}</svg>`;
+}
+function importanceChart(importance,W=340,H=260){
+  if(!importance.length) return emptyChart();
+  const pad={l:118,r:36,t:8,b:8};
+  const rowH=(H-pad.t-pad.b)/importance.length;
+  const sx=v=> pad.l + v*(W-pad.l-pad.r);
+  let s='';
+  importance.forEach((it,i)=>{
+    const y=pad.t+i*rowH+rowH*0.2, h=rowH*0.6;
+    s+=`<text x="${pad.l-8}" y="${y+h/2+3}" text-anchor="end" font-size="10.5">${esc(it.label)}</text>`;
+    s+=`<rect x="${pad.l}" y="${y}" width="${Math.max(1,sx(it.rel)-pad.l)}" height="${h}" fill="#3f6fd0" rx="3"/>`;
+    s+=`<text x="${sx(it.rel)+6}" y="${y+h/2+3}" font-size="10">${(it.rel*100).toFixed(0)}%</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${s}</svg>`;
+}
+function sparkline(points,W=140,H=36){
+  if(points.length<2) return `<svg width="${W}" height="${H}"></svg>`;
+  const lo=Math.min(...points), hi=Math.max(...points);
+  const span=(hi-lo)||1;
+  const sx=i=> i/(points.length-1)*(W-6)+3;
+  const sy=v=> H-4-(v-lo)/span*(H-8);
+  const d=points.map((p,i)=> `${i===0?'M':'L'}${sx(i).toFixed(1)},${sy(p).toFixed(1)}`).join(' ');
+  return `<svg width="${W}" height="${H}"><path d="${d}" fill="none" stroke="#3f6fd0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${sx(points.length-1)}" cy="${sy(points[points.length-1])}" r="2.5" fill="#3f6fd0"/></svg>`;
+}
+function emptyChart(){ return `<div class="empty-chart">尚無資料，請先新增資料並訓練模型</div>`; }
+const IEC_CATEGORIES = [["Cat I",4.7],["Cat II",5.2],["Cat III",5.5],["Cat IV",7.2],["Cat V",7.7],["Cat VI",8.2]];
+function iecCategoryChart(prediction, W=460, H=230){
+  const pad={l:38,r:14,t:26,b:32};
+  const maxV = Math.max(9, prediction+1);
+  const minV = 2;
+  const n = IEC_CATEGORIES.length;
+  const bw = (W-pad.l-pad.r)/n;
+  const sy=v=> H-pad.b - (v-minV)/(maxV-minV)*(H-pad.t-pad.b);
+  let hitIdx = IEC_CATEGORIES.findIndex(c=> prediction < c[1]);
+  let s='';
+  s+=`<line class="axis-line" x1="${pad.l}" y1="${sy(minV)}" x2="${W-pad.r}" y2="${sy(minV)}"/>`;
+  s+=`<line class="axis-line" x1="${pad.l}" y1="${sy(minV)}" x2="${pad.l}" y2="${sy(maxV)}"/>`;
+  ticksFor(minV,maxV,4).forEach(t=>{
+    s+=`<line class="grid-line" x1="${pad.l}" y1="${sy(t)}" x2="${W-pad.r}" y2="${sy(t)}"/>`;
+    s+=`<text x="${pad.l-6}" y="${sy(t)+3}" text-anchor="end">${t}</text>`;
+  });
+  IEC_CATEGORIES.forEach(([cat,val],i)=>{
+    const x0=pad.l+i*bw, bh=sy(minV)-sy(val);
+    let color = "#0ca30c";
+    if(prediction>=val) color="var(--bad)";
+    if(i===hitIdx) color="#e08a1f";
+    s+=`<rect x="${x0+bw*0.16}" y="${sy(val)}" width="${bw*0.68}" height="${Math.max(0,bh)}" fill="${color}" rx="3"/>`;
+    s+=`<text x="${x0+bw/2}" y="${H-pad.b+14}" text-anchor="middle" font-size="10">${cat}</text>`;
+  });
+  const py = sy(prediction);
+  s+=`<line x1="${pad.l}" y1="${py}" x2="${W-pad.r}" y2="${py}" stroke="var(--bad)" stroke-width="1.6" stroke-dasharray="4,3"/>`;
+  s+=`<text x="${W-pad.r}" y="${py-5}" text-anchor="end" fill="var(--bad)" font-size="11">${prediction.toFixed(1)} Bel</text>`;
+  s+=`<text x="${pad.l}" y="14" font-size="11" fill="#3a5a86">Server Noise Level vs IEC Spec</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" height="${H}">${s}</svg>`;
+}
+
+/* ============================================================
+   5. MICROSOFT GRAPH DATA LAYER — OneDrive Excel workbook
+   (Files.ReadWrite, no SharePoint / no Sites.Selected / no IT-only steps
+   for the data layer itself)
+   ============================================================ */
+const state = {};
+TYPE_KEYS.forEach(k=> state[k]={records:[], model:null, training:false});
+let autoRefreshTimer = null;
+
+const RECORDS_COLUMNS = ["ProductType","fan_vendor","fan_unit_size","fan_unit_max_noise","fan_standalone_noise",
+  "server_size","fan_number","fan_duty","fan_rated_rpm","fan_rpm",
+  "server_system_noise","contributor","source","created_at"];
+const MODELS_COLUMNS = ["ProductType","ModelJson","UpdatedAt"];
+
+// Minimal blank .xlsx template (generated with openpyxl): two sheets "Records"/"Models",
+// each already containing a proper Excel Table (RecordsTable / ModelsTable) with the
+// header row above, no data rows. Used to auto-create the workbook on first use.
+const BLANK_XLSX_B64 = "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";
+
+function base64ToUint8Array(b64){
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return arr;
+}
+function encGraphPath(p){
+  return p.split('/').map(seg=> seg ? encodeURIComponent(seg) : '').join('/');
+}
+function cellToNum(v){ if(v===""||v===null||v===undefined) return null; if(typeof v==='number') return v; const n=Number(v); return Number.isNaN(n) ? null : n; }
+function cellToStr(v){ if(v===""||v===null||v===undefined) return ""; return String(v); }
+
+const Graph = {
+  async call(path, opts){
+    const token = await getGraphToken();
+    const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, Object.assign({}, opts, {
+      headers: Object.assign({Authorization:`Bearer ${token}`}, (opts&&opts.headers)||{}),
+    }));
+    if(!res.ok){ const t=await res.text().catch(()=>""); throw new Error(`Graph 呼叫失敗（HTTP ${res.status}）${t.slice(0,220)}`); }
+    if(res.status===204) return null;
+    return await res.json();
+  },
+};
+
+const Excel = {
+  base:null, mode:null,
+  async ensureBase(){
+    if(this.base) return this.base;
+    const path = settings.workbookPath.startsWith('/') ? settings.workbookPath : '/'+settings.workbookPath;
+    const encPath = encGraphPath(path);
+    // 1) 檔案已存在於自己的 OneDrive
+    try{
+      await Graph.call(`/me/drive/root:${encPath}`);
+      this.base = `/me/drive/root:${encPath}:/workbook`;
+      this.mode = 'own';
+      return this.base;
+    }catch(e){ /* 自己 OneDrive 沒有這個檔案，繼續往下找 */ }
+    // 2) 其他同事已將同名檔案分享給我（OneDrive「共用」），自動偵測並改連到該檔案
+    try{
+      const fname = path.split('/').filter(Boolean).pop();
+      const shared = await Graph.call(`/me/drive/sharedWithMe`);
+      const hit = (shared.value||[]).find(it=> it.name===fname && it.remoteItem);
+      if(hit){
+        const driveId = hit.remoteItem.parentReference.driveId;
+        const itemId = hit.remoteItem.id;
+        this.base = `/drives/${driveId}/items/${itemId}/workbook`;
+        this.mode = 'shared';
+        return this.base;
+      }
+    }catch(e){ /* 忽略，繼續往下建立新檔案 */ }
+    // 3) 兩者皆無：在目前登入者自己的 OneDrive 建立新檔案（使用內建範本，已含好 Records/Models 兩個資料表）
+    const bytes = base64ToUint8Array(BLANK_XLSX_B64);
+    await Graph.call(`/me/drive/root:${encPath}:/content`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},
+      body: bytes,
+    });
+    this.base = `/me/drive/root:${encPath}:/workbook`;
+    this.mode = 'own';
+    return this.base;
+  },
+  async getRows(tableName){
+    const base = await this.ensureBase();
+    let url = `${base}/tables('${tableName}')/rows?$top=999`;
+    let rows = [];
+    while(url){
+      const j = await Graph.call(url.startsWith('http') ? url.replace('https://graph.microsoft.com/v1.0','') : url);
+      rows = rows.concat(j.value||[]);
+      url = j['@odata.nextLink'] ? j['@odata.nextLink'] : null;
+    }
+    return rows; // [{index, values:[[...]]}, ...]
+  },
+  async addRow(tableName, valuesArray){
+    const base = await this.ensureBase();
+    return Graph.call(`${base}/tables('${tableName}')/rows`, {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({values:[valuesArray]}),
+    });
+  },
+  async updateRowAt(tableName, index, valuesArray){
+    const base = await this.ensureBase();
+    return Graph.call(`${base}/tables('${tableName}')/rows/itemAt(index=${index})`, {
+      method:"PATCH", headers:{"Content-Type":"application/json"}, body: JSON.stringify({values:[valuesArray]}),
+    });
+  },
+  resetCache(){ this.base=null; this.mode=null; },
+};
+
+const Store = {
+  async listRecords(typeKey){
+    const rows = await Excel.getRows('RecordsTable');
+    const out = [];
+    rows.forEach(r=>{
+      const v = r.values[0];
+      if(cellToStr(v[0]) !== typeKey) return;
+      const rec = { id: r.index, contributor: cellToStr(v[11]), source: cellToStr(v[12]), created_at: cellToStr(v[13]) };
+      RECORDS_COLUMNS.forEach((col,i)=>{
+        if(col==='ProductType' || col==='contributor' || col==='source' || col==='created_at') return;
+        rec[col] = cellToNum(v[i]);
+      });
+      out.push(rec);
+    });
+    return out;
+  },
+  async addRecord(typeKey, doc){
+    const row = RECORDS_COLUMNS.map(col=>{
+      if(col==='ProductType') return typeKey;
+      if(col==='created_at') return new Date().toISOString();
+      const v = doc[col];
+      return (v===undefined || v===null || Number.isNaN(v)) ? "" : v;
+    });
+    return Excel.addRow('RecordsTable', row);
+  },
+  async getModel(typeKey){
+    const rows = await Excel.getRows('ModelsTable');
+    const found = rows.find(r=> cellToStr(r.values[0][0])===typeKey);
+    if(!found) return null;
+    try{ return JSON.parse(found.values[0][1]); }catch(e){ return null; }
+  },
+  async setModel(typeKey, model){
+    const rows = await Excel.getRows('ModelsTable');
+    const found = rows.find(r=> cellToStr(r.values[0][0])===typeKey);
+    const json = JSON.stringify(model);
+    const now = new Date().toISOString();
+    if(found){ return Excel.updateRowAt('ModelsTable', found.index, [typeKey, json, now]); }
+    return Excel.addRow('ModelsTable', [typeKey, json, now]);
+  },
+};
+
+function setSyncStatus(kind, text){
+  const dot=document.getElementById('syncDot'), t=document.getElementById('syncText');
+  if(!dot) return;
+  dot.className = "dot " + (kind==='live'?'live':kind==='off'?'off':'');
+  t.textContent = text;
+}
+async function refreshAll(){
+  if(guestMode){ setSyncStatus('off','離線預覽模式，未登入'); render(); return; }
+  setSyncStatus('','同步中…');
+  try{
+    for(const typeKey of TYPE_KEYS){
+      const [records, model] = await Promise.all([ Store.listRecords(typeKey), Store.getModel(typeKey) ]);
+      state[typeKey].records = records;
+      state[typeKey].model = model;
+    }
+    const modeLabel = Excel.mode==='shared' ? '（共用檔案）' : '';
+    setSyncStatus('live', `已與 OneDrive Excel 同步${modeLabel} — ${new Date().toLocaleTimeString('zh-TW')}`);
+  }catch(e){ console.error(e); setSyncStatus('off', "同步失敗："+(e && e.message ? e.message : e)); }
+  render();
+}
+function startAutoRefresh(){
+  if(autoRefreshTimer) clearInterval(autoRefreshTimer);
+  const sec = Number(settings.autoRefreshSec)||0;
+  if(sec>0) autoRefreshTimer = setInterval(refreshAll, sec*1000);
+}
+
+/* ============================================================
+   6. RENDERING
+   ============================================================ */
+function fieldHTML(f, forTarget=false){
+  const cls = forTarget ? "field target" : "field";
+  const optLabel = f.optional ? ` <span class="opt">(選填)</span>` : "";
+  const control = f.options
+    ? `<select id="${f.key}-{{TYPE}}" data-key="${f.key}">
+        <option value="" ${f.optional?"selected":"disabled selected"}>${f.optional?"—":"請選擇"}</option>
+        ${f.options.map(o=>`<option value="${o.value}">${esc(o.label)}</option>`).join("")}
+      </select>`
+    : `<input type="number" step="${f.step}" id="${f.key}-{{TYPE}}" data-key="${f.key}" placeholder="${f.optional?'—':''}">`;
+  return `<div class="${cls}"><label for="${f.key}-{{TYPE}}">${f.label} <span class="opt">${f.labelEn}</span>${optLabel}</label><div class="unit-wrap">${control}<span class="unit">${f.unit}</span></div></div>`;
+}
+function panelTemplate(typeKey){
+  const cfg=TYPES[typeKey];
+  const feats=cfg.features;
+  const addFields = feats.map(f=> fieldHTML(f).replaceAll("{{TYPE}}", typeKey)).join("") + fieldHTML(TARGET, true).replaceAll("{{TYPE}}", typeKey);
+  const csvHeader = feats.map(f=>f.key).concat([TARGET.key]).join(",");
+  return `
+  <div class="stats" id="stats-${typeKey}"></div>
+  <div class="grid2">
+    <div>
+      <div class="card">
+        <h3>新增一筆資料</h3>
+        <div class="sub">填入風扇規格與實測系統噪音，送出後透過 Graph API 寫入你的 OneDrive Excel 檔案</div>
+        <div class="field-grid">${addFields}</div>
+        <div class="row-actions">
+          <button class="btn primary" data-action="add-row" data-type="${typeKey}">＋ 新增資料</button>
+          <span class="msg" id="add-msg-${typeKey}"></span>
+        </div>
+        <details class="csv-help" style="margin-top:18px;">
+          <summary>批次匯入 CSV</summary>
+          <p style="margin:8px 0 6px;">貼上 CSV（含表頭，欄位需包含）：<br><code class="inline">${csvHeader}</code></p>
+          <textarea class="csv" id="csv-${typeKey}" placeholder="${csvHeader}
+0,4028,70,,1,7,10,33000,3300,4.1"></textarea>
+          <div class="row-actions">
+            <button class="btn ghost" data-action="import-csv" data-type="${typeKey}">匯入 CSV</button>
+            <span class="msg" id="csv-msg-${typeKey}"></span>
+          </div>
+        </details>
+      </div>
+      <div class="card">
+        <h3>預測噪音</h3>
+        <div class="sub">套用目前已訓練的模型，即時預測系統噪音，並比對 IEC 噪音等級</div>
+        <div class="field-grid" id="predict-fields-${typeKey}">
+          ${feats.map(f=> fieldHTML(f).replaceAll("{{TYPE}}", "pred-"+typeKey)).join("")}
+        </div>
+        <div class="row-actions">
+          <button class="btn ghost" data-action="predict" data-type="${typeKey}">預測</button>
+        </div>
+        <div id="predict-result-${typeKey}"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h3>訓練模型</h3>
+        <div class="sub">於瀏覽器端訓練雙隱藏層類神經網路（16×16），完成後寫回 OneDrive Excel，若已分享檔案則團隊共用</div>
+        <div class="train-box">
+          <button class="btn primary" data-action="train" data-type="${typeKey}">▶ 開始訓練</button>
+          <div class="progress-wrap" id="progress-wrap-${typeKey}" style="display:none;">
+            <div class="progress-track"><div class="progress-fill" id="progress-fill-${typeKey}"></div></div>
+            <div class="progress-label" id="progress-label-${typeKey}">—</div>
+          </div>
+        </div>
+        <div class="msg" id="train-msg-${typeKey}"></div>
+        <div id="history-${typeKey}" style="margin-top:14px;"></div>
+      </div>
+      <div class="card">
+        <h3>模型結果</h3>
+        <div class="sub" id="model-meta-${typeKey}">尚未訓練模型</div>
+        <div id="results-${typeKey}"></div>
+      </div>
+    </div>
+  </div>
+  <div class="section-title">貢獻資料</div>
+  <div class="card"><div class="table-wrap table-scroll" id="table-${typeKey}"></div></div>`;
+}
+function settingsTemplate(){
+  return `
+  <div class="card">
+    <h3>Azure AD 登入設定</h3>
+    <div class="sub">預設沿用 ServerNoiseAI_0820_UI_Updated.py 既有之公司應用程式</div>
+    <div class="config-row"><label>Client ID</label><input id="cfg-clientId" value="${esc(settings.clientId)}"></div>
+    <div class="config-row"><label>Tenant ID</label><input id="cfg-tenantId" value="${esc(settings.tenantId)}"></div>
+  </div>
+  <div class="card">
+    <h3>OneDrive 檔案位置</h3>
+    <div class="sub">工具會在你自己的 OneDrive 下自動建立這個 Excel 檔案（含 Records / Models 兩個資料表），不需手動建立。若同事已把同名檔案分享給你（OneDrive「共用」），工具會自動改連到那份共用檔案。</div>
+    <div class="config-row"><label>檔案路徑</label><input id="cfg-workbookPath" value="${esc(settings.workbookPath)}" placeholder="/FanNoiseAI/FanNoiseData.xlsx"></div>
+    <div class="config-row"><label>自動同步（秒）</label><input id="cfg-autoRefresh" value="${esc(settings.autoRefreshSec)}" placeholder="0 = 關閉自動同步"></div>
+    <div class="row-actions">
+      <button class="btn primary" onclick="saveSettingsFromForm()">儲存設定並重新連線</button>
+      <span class="msg" id="settings-msg"></span>
+    </div>
+  </div>`;
+}
+function guideTemplate(){
+  return `
+  <div class="card">
+    <h3>設定指南</h3>
+    <div class="sub">本版本透過 Microsoft Graph API 讀寫你自己 OneDrive 裡的一份 Excel 檔案（Files.ReadWrite 權限），不使用 SharePoint 清單，多數步驟不需要 IT 介入</div>
+    <ul class="setup-steps">
+      <li>
+        <h4>1. 部署網址並登記 Redirect URI（通常仍需請 IT／Azure AD 管理員協助一次）</h4>
+        <p>這個檔案需要放在一個真實的 https 網址下才能登入（不能用本機雙擊 file:// 開啟，也不能放 SharePoint 文件庫——會被強制下載）。找到公司內部可放置靜態網頁的位置後，請 IT 將該網址登記在應用程式（Client ID <code class="inline">${esc(settings.clientId)}</code>）Authentication 頁面下的「Single-page application」Redirect URI。這是唯一無法繞過、需要有 Azure AD 應用程式管理權限才能做的一步。</p>
+      </li>
+      <li>
+        <h4>2. 首次登入</h4>
+        <p>部署完成後開啟該網址，點「以 Microsoft 帳號登入」。登入視窗通常會直接顯示「此應用程式要求：讀取及寫入您的檔案」，按「接受」即可，不需要管理員核准——這與 SharePoint 清單需要的 Sites.Selected 權限不同。少數公司會將 Files.ReadWrite 也設為需管理員核准，若畫面顯示「需要系統管理員核准」，才需要請 IT 依上方步驟 1 的同一個應用程式追加同意。</p>
+      </li>
+      <li>
+        <h4>3. 資料檔案自動建立，不需手動設定 Excel</h4>
+        <p>第一次登入成功後，工具會自動在你的 OneDrive 根目錄下建立 <code class="inline">${esc(settings.workbookPath)}</code>，裡面已經有 <b>Records</b>（訓練資料）與 <b>Models</b>（模型結果）兩個結構化資料表，新增資料、訓練模型都會自動寫入對應資料表，不需要你自己在 Excel 裡建欄位。</p>
+      </li>
+      <li>
+        <h4>4. 讓同事一起使用同一份資料（不需要 IT）</h4>
+        <p>到你的 OneDrive 網頁版，找到 <code class="inline">${esc(settings.workbookPath)}</code>，用「共用」功能分享給同事，權限選「可編輯」（不是「僅檢視」）。同事開啟同一個網址、用自己的帳號登入後，工具會自動偵測到這份被分享的檔案（比對檔名），改連到同一份資料，不需要同事再做任何設定——只要雙方「檔案路徑」設定裡的檔名一致即可（預設值本來就相同）。</p>
+      </li>
+      <li>
+        <h4>5. 需留意的限制</h4>
+        <p>資料實際存放在檔案擁有者（第一個使用的人）自己的 OneDrive 裡，屬於個人帳號底下的檔案：若該同事離職或帳號被停用，檔案存取可能中斷，建議定期用 Excel 開啟該檔案做備份，或日後視需要遷移到公司共用的位置。此外「可編輯」分享才能寫入資料，僅「檢視」權限只能讀取、無法新增資料或訓練模型。</p>
+      </li>
+    </ul>
+  </div>`;
+}
+function buildNavAndPanels(){
+  const navEl=document.getElementById('navTypes');
+  const panelsEl=document.getElementById('panels');
+  navEl.innerHTML = TYPE_KEYS.map((k,i)=>
+    `<a class="nav ${i===0?'active':''}" data-tab="${k}" onclick="switchTab('${k}')"><span class="ic">${TYPE_ICON[k]}</span>${TYPES[k].label}<span class="cnt" id="tab-cnt-${k}"></span></a>`
+  ).join("");
+  panelsEl.innerHTML =
+    TYPE_KEYS.map((k,i)=> `<div class="panel ${i===0?'active':''}" id="panel-${k}">${panelTemplate(k)}</div>`).join("") +
+    `<div class="panel" id="panel-__settings">${settingsTemplate()}</div>` +
+    `<div class="panel" id="panel-__guide">${guideTemplate()}</div>`;
+}
+function switchTab(key){
+  document.querySelectorAll('.sidenav .nav').forEach(n=>n.classList.toggle('active', n.dataset.tab===key));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+key).classList.add('active');
+  const titles = {"__settings":["設定與連線","管理 Azure AD 登入與 OneDrive 檔案位置設定"], "__guide":["設定指南","部署、登入權限與團隊共用設定"]};
+  if(titles[key]){ document.getElementById('pageTitle').textContent=titles[key][0]; document.getElementById('pageSub').textContent=titles[key][1]; }
+  else { document.getElementById('pageTitle').textContent = TYPES[key].label; document.getElementById('pageSub').textContent = "集結"+TYPES[key].label+"風扇規格與實測系統噪音，訓練並預測系統噪音。"; }
+}
+function saveSettingsFromForm(){
+  settings.clientId = document.getElementById('cfg-clientId').value.trim() || DEFAULT_CLIENT_ID;
+  settings.tenantId = document.getElementById('cfg-tenantId').value.trim() || DEFAULT_TENANT_ID;
+  settings.workbookPath = document.getElementById('cfg-workbookPath').value.trim() || "/FanNoiseAI/FanNoiseData.xlsx";
+  settings.autoRefreshSec = Number(document.getElementById('cfg-autoRefresh').value) || 0;
+  saveSettingsToStorage(settings);
+  Excel.resetCache();
+  startAutoRefresh();
+  const msg=document.getElementById('settings-msg');
+  msg.textContent="已儲存，重新連線中…"; msg.className="msg ok";
+  refreshAll();
+}
+function updateTabCount(typeKey){ const el=document.getElementById('tab-cnt-'+typeKey); if(el) el.textContent = `(${state[typeKey].records.length})`; }
+function fmtNum(v,digits=2){ if(v===undefined||v===null||Number.isNaN(v)) return "—"; return Number(v).toFixed(digits); }
+function fmtField(f,v){ if(v===undefined||v===null||Number.isNaN(v)) return "—"; if(f.options){ const opt=f.options.find(o=>o.value===v || o.value===Number(v)); return opt ? opt.label : fmtNum(v,f.digits); } return fmtNum(v,f.digits); }
+function renderStats(typeKey){
+  const el=document.getElementById('stats-'+typeKey); if(!el) return;
+  const recs=state[typeKey].records; const model=state[typeKey].model;
+  const nUser = recs.filter(r=>r.source==='user').length;
+  el.innerHTML = `
+    <div class="stat"><div class="k">資料筆數</div><div class="v">${recs.length}<small> 筆</small></div></div>
+    <div class="stat"><div class="k">團隊新增</div><div class="v">${nUser}<small> 筆</small></div></div>
+    <div class="stat"><div class="k">R²（測試集）</div><div class="v">${model?fmtNum(model.metrics.r2,3):"—"}</div></div>
+    <div class="stat ${model && model.metrics.withinPct>=80?'pass':''}"><div class="k">合格率 &lt;0.3 Bel</div><div class="v">${model?fmtNum(model.metrics.withinPct,1)+'%':"—"}</div></div>`;
+}
+function renderTable(typeKey){
+  const el=document.getElementById('table-'+typeKey); if(!el) return;
+  const cfg=TYPES[typeKey]; const feats=cfg.features;
+  const recs = state[typeKey].records.slice().sort((a,b)=> (b.created_at||"").localeCompare(a.created_at||"")).slice(0,200);
+  if(!recs.length){ el.innerHTML=`<div class="empty-chart">尚無資料</div>`; return; }
+  const head = `<th>來源</th>` + feats.map(f=>`<th>${f.key}</th>`).join("") + `<th>${TARGET.key}</th><th>貢獻者</th>`;
+  const rows = recs.map(r=>{
+    const tag = r.source==='user' ? `<span class="pill user">team</span>` : `<span class="pill hist">history</span>`;
+    const cells = feats.map(f=> `<td>${fmtField(f, r[f.key])}</td>`).join("");
+    return `<tr><td class="tag">${tag}</td>${cells}<td>${fmtNum(r[TARGET.key],2)}</td><td class="tag">${esc(r.contributor||'—')}</td></tr>`;
+  }).join("");
+  el.innerHTML = `<table class="data-table"><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+function renderResults(typeKey){
+  const el=document.getElementById('results-'+typeKey); const meta=document.getElementById('model-meta-'+typeKey);
+  const model=state[typeKey].model;
+  if(!model){ el.innerHTML=""; meta.textContent="尚未訓練模型"; renderStats(typeKey); return; }
+  meta.textContent = `於 ${new Date(model.trainedAt).toLocaleString('zh-TW')} 訓練 · 使用 ${model.nTrain} 筆訓練 / ${model.nTest} 筆測試${model.trainedBy?(' · 由 '+model.trainedBy):''}`;
+  const m=model.metrics;
+  el.innerHTML = `
+    <div class="metric-row">
+      <div class="metric"><div class="k">MSE</div><div class="v">${fmtNum(m.mse,3)}</div></div>
+      <div class="metric"><div class="k">MAE</div><div class="v">${fmtNum(m.mae,3)}</div></div>
+      <div class="metric"><div class="k">R²</div><div class="v">${fmtNum(m.r2,3)}</div></div>
+      <div class="metric"><div class="k">合格 &lt;0.3 Bel</div><div class="v">${m.within}/${m.nTest}</div></div>
+    </div>
+    <div class="chart-grid">
+      <div class="chart-card"><h4>實際 vs 預測</h4><div class="sub">測試集散點圖，虛線為完美預測（y=x）</div>${scatterChart(model.testActual, model.testPredicted)}
+        <div class="legend"><div class="item"><span class="sw" style="background:var(--good)"></span>誤差 &lt; 0.3 Bel</div><div class="item"><span class="sw" style="background:var(--bad)"></span>誤差 ≥ 0.3 Bel</div></div>
+      </div>
+      <div class="chart-card"><h4>誤差分布</h4><div class="sub">絕對誤差直方圖，紅線為 0.3 Bel 合格門檻</div>${histogramChart(model.testPredicted.map((p,i)=>Math.abs(p-model.testActual[i])))}</div>
+      <div class="chart-card" style="grid-column:1 / -1;"><h4>特徵重要性</h4><div class="sub">以置換重要性（permutation importance）估計，相對於最重要特徵之百分比</div>${importanceChart(model.importance)}</div>
+    </div>`;
+  renderStats(typeKey);
+}
+function renderHistory(typeKey){
+  const el=document.getElementById('history-'+typeKey); const model=state[typeKey].model;
+  if(!model || !model.history || model.history.length<2){ el.innerHTML=""; return; }
+  const r2s = model.history.map(h=>h.r2);
+  el.innerHTML = `<div class="history-row">${sparkline(r2s)}<div class="hist-text">模型演進：共 ${model.history.length} 次訓練<br>R² ${fmtNum(r2s[0],2)} → ${fmtNum(r2s[r2s.length-1],2)}</div></div>`;
+}
+function render(){ TYPE_KEYS.forEach(k=>{ renderStats(k); renderTable(k); renderResults(k); renderHistory(k); updateTabCount(k); }); }
+
+/* ============================================================
+   7. ACTIONS
+   ============================================================ */
+function readFieldValues(typeKey, prefix=""){
+  const cfg=TYPES[typeKey]; const out={}; let ok=true, missing=[];
+  cfg.features.forEach(f=>{
+    const input=document.getElementById(`${f.key}-${prefix}${typeKey}`);
+    const raw=input ? input.value.trim() : "";
+    if(raw===""){ if(f.optional){ out[f.key]=null; } else { ok=false; missing.push(f.label); out[f.key]=null; } }
+    else { const v=parseFloat(raw); if(Number.isNaN(v)){ ok=false; missing.push(f.label); } else out[f.key]=v; }
+  });
+  return {values:out, ok, missing};
+}
+async function handleAddRow(typeKey){
+  const msg=document.getElementById('add-msg-'+typeKey);
+  if(guestMode){ msg.textContent="離線預覽模式，未登入"; msg.className="msg err"; return; }
+  const {values, ok, missing} = readFieldValues(typeKey);
+  const targetInput=document.getElementById(`${TARGET.key}-${typeKey}`);
+  const targetRaw=targetInput.value.trim();
+  const targetVal=parseFloat(targetRaw);
+  if(!ok || targetRaw==="" || Number.isNaN(targetVal)){
+    msg.textContent = "請完整填寫必填欄位："+(missing.length?missing.join('、'):TARGET.label);
+    msg.className="msg err"; return;
+  }
+  const contrib = currentUserLabel() || "匿名";
+  const doc = {...values, [TARGET.key]:targetVal, contributor:contrib, source:"user"};
+  msg.textContent="新增中…"; msg.className="msg";
+  try{
+    await Store.addRecord(typeKey, doc);
+    msg.textContent="已新增！感謝貢獻資料。"; msg.className="msg ok";
+    document.querySelectorAll(`#panel-${typeKey} .field:not(.target) input`).forEach(el=>{ if(el.id.endsWith('-'+typeKey) && !el.id.startsWith('pred-')) el.value=""; });
+    targetInput.value="";
+    await refreshAll();
+  }catch(e){ msg.textContent="新增失敗："+(e && e.message ? e.message : e); msg.className="msg err"; }
+}
+function parseCsv(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+  if(lines.length<2) return {header:[],rows:[]};
+  const header=lines[0].split(',').map(h=>h.trim());
+  const rows=lines.slice(1).map(l=> l.split(',').map(c=>c.trim()));
+  return {header,rows};
+}
+async function handleImportCsv(typeKey){
+  const cfg=TYPES[typeKey]; const msg=document.getElementById('csv-msg-'+typeKey);
+  if(guestMode){ msg.textContent="離線預覽模式，未登入"; msg.className="msg err"; return; }
+  const text=document.getElementById('csv-'+typeKey).value;
+  const {header,rows}=parseCsv(text);
+  const requiredKeys = cfg.features.filter(f=>!f.optional).map(f=>f.key).concat([TARGET.key]);
+  const missingCols = requiredKeys.filter(k=>!header.includes(k));
+  if(!rows.length){ msg.textContent="請貼上包含表頭與資料列的 CSV"; msg.className="msg err"; return; }
+  if(missingCols.length){ msg.textContent="缺少欄位："+missingCols.join('、'); msg.className="msg err"; return; }
+  const allKeys = cfg.features.map(f=>f.key).concat([TARGET.key]);
+  const idxOf = {}; header.forEach((h,i)=> idxOf[h]=i);
+  const docs = rows.map(r=>{
+    const d={};
+    allKeys.forEach(k=>{ const i=idxOf[k];
+      if(i===undefined || r[i]===undefined || r[i]==="") d[k]= (k===TARGET.key || !cfg.features.find(f=>f.key===k && f.optional)) ? NaN : null;
+      else d[k]=parseFloat(r[i]); });
+    d.contributor = idxOf.contributor!==undefined && r[idxOf.contributor] ? r[idxOf.contributor] : (currentUserLabel()||"CSV 匯入");
+    d.source="user";
+    return d;
+  }).filter(d=> !Number.isNaN(d[TARGET.key]));
+  msg.textContent = `匯入中… 0/${docs.length}`; msg.className="msg";
+  let done=0, failed=0;
+  for(const d of docs){
+    try{ await Store.addRecord(typeKey, d); done++; }catch(e){ failed++; }
+    msg.textContent = `匯入中… ${done+failed}/${docs.length}`;
+  }
+  msg.textContent = `完成：成功 ${done} 筆${failed?`，失敗 ${failed} 筆`:''}`;
+  msg.className = failed ? "msg err" : "msg ok";
+  document.getElementById('csv-'+typeKey).value="";
+  await refreshAll();
+}
+async function handleTrain(typeKey){
+  const btn=document.querySelector(`[data-action="train"][data-type="${typeKey}"]`);
+  const msg=document.getElementById('train-msg-'+typeKey);
+  const wrap=document.getElementById('progress-wrap-'+typeKey);
+  const fill=document.getElementById('progress-fill-'+typeKey);
+  const label=document.getElementById('progress-label-'+typeKey);
+  if(guestMode){ msg.textContent="離線預覽模式，未登入"; msg.className="msg err"; return; }
+  const recs=state[typeKey].records;
+  if(recs.length<10){ msg.textContent="資料筆數過少（至少需要 10 筆）"; msg.className="msg err"; return; }
+  btn.disabled=true; wrap.style.display='block'; msg.textContent="";
+  try{
+    const result = await trainForType(typeKey, recs, (epoch,total)=>{
+      const pct=Math.round(epoch/total*100); fill.style.width=pct+"%"; label.textContent=`第 ${epoch}/${total} 輪`;
+    });
+    const prevHistory = (state[typeKey].model && state[typeKey].model.history) || [];
+    const history = prevHistory.concat([{trainedAt:new Date().toISOString(), n:result.nTotal, r2:result.metrics.r2, mae:result.metrics.mae}]).slice(-20);
+    const payload = {
+      weights:result.weights, featureKeys:result.featureKeys, featureMeans:result.featureMeans, featureStds:result.featureStds,
+      impute:result.impute, targetMean:result.targetMean, targetStd:result.targetStd, hidden:result.hidden,
+      metrics:result.metrics, importance:result.importance, testActual:result.testActual, testPredicted:result.testPredicted,
+      nTotal:result.nTotal, nTrain:result.nTrain, nTest:result.nTest,
+      trainedAt:new Date().toISOString(), trainedBy: currentUserLabel() || "匿名", history,
+    };
+    await Store.setModel(typeKey, payload);
+    msg.textContent="訓練完成！結果已寫回 OneDrive Excel。"; msg.className="msg ok";
+    await refreshAll();
+  }catch(e){ console.error(e); msg.textContent="訓練失敗："+(e && e.message ? e.message : e); msg.className="msg err"; }
+  finally{ btn.disabled=false; wrap.style.display='none'; fill.style.width='0%'; }
+}
+function handlePredict(typeKey){
+  const cfg=TYPES[typeKey]; const el=document.getElementById('predict-result-'+typeKey); const model=state[typeKey].model;
+  if(!model){ el.innerHTML=`<div class="msg err">請先訓練模型</div>`; return; }
+  const {values, ok, missing} = readFieldValues(typeKey, "pred-");
+  if(!ok){ el.innerHTML=`<div class="msg err">請完整填寫：${missing.join('、')}</div>`; return; }
+  const pred = predictWithModel(model, cfg.features, values);
+  const band = model.metrics.mae;
+  el.innerHTML = `
+    <div class="predict-result">
+      <div><div class="lab">預測系統噪音</div><div class="big num">${fmtNum(pred,2)} <small style="font-size:13px;color:#6f96c4;">Bel</small></div></div>
+      <div class="lab">± ${fmtNum(band,2)} Bel（模型平均誤差 MAE）</div>
+    </div>
+    <div class="chart-card" style="margin-top:10px;">${iecCategoryChart(pred)}</div>`;
+}
+document.addEventListener('click', (e)=>{
+  const btn=e.target.closest('[data-action]'); if(!btn) return;
+  const action=btn.dataset.action, typeKey=btn.dataset.type;
+  if(action==='add-row') handleAddRow(typeKey);
+  else if(action==='import-csv') handleImportCsv(typeKey);
+  else if(action==='train') handleTrain(typeKey);
+  else if(action==='predict') handlePredict(typeKey);
+});
+
+/* ============================================================
+   8. BOOT
+   ============================================================ */
+(async function boot(){
+  if(location.protocol !== 'file:'){
+    try{
+      buildMsal();
+      await msalInstance.initialize();
+      const accs = msalInstance.getAllAccounts();
+      if(accs.length){ currentAccount = accs[0]; msalInstance.setActiveAccount(currentAccount); enterApp(); return; }
+    }catch(e){ /* fall through to login gate */ }
+  }
+})();
+</script>
